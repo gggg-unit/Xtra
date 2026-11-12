@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import androidx.core.content.edit
 import com.github.andreyasadchy.xtra.util.C
+import com.github.andreyasadchy.xtra.util.isTelevision
 import com.github.andreyasadchy.xtra.util.prefs
 
 /** Stable screen types that can have independent card-grid column counts. */
@@ -46,7 +47,7 @@ object GridColumnPreferences {
         val preferences = context.prefs()
         val pageColumns = preferences.readColumns(page.preferenceKey(orientation))
         val legacyColumns = preferences.readColumns(legacyKey)
-        val fallback = if (portrait) 1 else 2
+        val fallback = defaultColumns(context, page, portrait)
         return (pageColumns ?: legacyColumns ?: fallback).coerceIn(1, maximum)
     }
 
@@ -63,7 +64,7 @@ object GridColumnPreferences {
         val maximum = if (portrait) 4 else 6
         val legacyKey = if (portrait) C.PORTRAIT_COLUMN_COUNT else C.LANDSCAPE_COLUMN_COUNT
         val fallback = context.prefs().readColumns(legacyKey)
-            ?.coerceIn(1, maximum) ?: if (portrait) 1 else 2
+            ?.coerceIn(1, maximum) ?: defaultColumns(context, page, portrait)
         context.prefs().edit {
             val key = page.preferenceKey(orientation)
             if (columns.coerceIn(1, maximum) == fallback) remove(key)
@@ -78,6 +79,16 @@ object GridColumnPreferences {
                 page.preferenceKey(Configuration.ORIENTATION_LANDSCAPE),
             )
         }
+
+    private fun defaultColumns(context: Context, page: GridPage, portrait: Boolean): Int {
+        if (portrait) return 1
+        if (!context.isTelevision()) return 2
+        return when (page) {
+            GridPage.BROWSE_GAMES, GridPage.FOLLOWED_GAMES, GridPage.SEARCH_GAMES -> 4
+            GridPage.TOP_STREAMS -> 3
+            else -> 2
+        }
+    }
 
     private fun android.content.SharedPreferences.readColumns(key: String): Int? =
         runCatching { getString(key, null)?.toIntOrNull() }.getOrNull()

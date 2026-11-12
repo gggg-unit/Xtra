@@ -221,7 +221,7 @@ class PlayerSettingsDialog : BottomSheetDialogFragment() {
             }
             val videoInfoParent = parentFragment as? PlaybackVideoInfoHost
             if (videoInfoParent != null &&
-                requireContext().prefs().getBoolean(C.PLAYER_MENU_VIDEO_INFO, false)
+                (isTv || requireContext().prefs().getBoolean(C.PLAYER_MENU_VIDEO_INFO, false))
             ) {
                 menuVideoInfo.visibility = View.VISIBLE
                 menuVideoInfo.setOnClickListener {

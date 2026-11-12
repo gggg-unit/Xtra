@@ -1,5 +1,6 @@
 package com.github.andreyasadchy.xtra.ui.player
 
+import androidx.media3.common.Format
 import com.github.andreyasadchy.xtra.player.hls.TwitchHlsPlaylistDiagnostics
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -7,6 +8,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlaybackVideoDiagnosticsTest {
+
+    @Test
+    fun `active codec follows decoder input rather than downloaded format`() {
+        val store = PlaybackVideoDiagnosticsStore()
+        val hevc = Format.Builder().setWidth(2560).setHeight(1440)
+            .setSampleMimeType("video/hevc").build()
+        store.recordVideoInputFormat(hevc, "live", "primary")
+        store.update { it.copy(videoCodec = "avc1.64002a", videoMimeType = "video/avc") }
+
+        val active = store.snapshotForMedia("live", "primary")
+        assertEquals("H.265 / HEVC", videoCodecDisplayName(active.videoMimeType, active.videoCodec))
+        assertEquals(null, store.snapshotForMedia("live", "other").videoMimeType)
+        store.resetForNewMedia()
+        assertEquals(null, store.snapshotForMedia("live", "primary").videoMimeType)
+    }
 
     @Test
     fun `dropped frame reports accumulate`() {

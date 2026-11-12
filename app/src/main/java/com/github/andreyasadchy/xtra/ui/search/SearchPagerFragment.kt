@@ -1,19 +1,25 @@
 package com.github.andreyasadchy.xtra.ui.search
 
 import android.content.res.Configuration
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.R as AppCompatR
 import androidx.appcompat.widget.SearchView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.children
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
@@ -52,11 +58,14 @@ import com.github.andreyasadchy.xtra.ui.search.SearchPagerViewModel.UserLookupSt
 import com.github.andreyasadchy.xtra.ui.search.streams.StreamSearchFragment
 import com.github.andreyasadchy.xtra.ui.search.streams.SearchStreamSuggestionsHeaderAdapter
 import com.github.andreyasadchy.xtra.ui.settings.setTabCustomizationLongPress
+import com.github.andreyasadchy.xtra.ui.tv.TvFocusHelper
 import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.configureForSmoothPaging
 import com.github.andreyasadchy.xtra.util.TwitchApiHelper
 import com.github.andreyasadchy.xtra.util.getAlertDialogBuilder
+import com.github.andreyasadchy.xtra.util.isTelevision
 import com.github.andreyasadchy.xtra.util.prefs
+import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
@@ -179,6 +188,7 @@ class SearchPagerFragment : BaseNetworkFragment(), FragmentHost {
             applyDropsFilters(result.parcelableArrayList<DropStreamFilter>(DropFiltersBottomSheet.FILTERS_KEY).orEmpty())
         }
         with(binding) {
+            val isTv = requireContext().isTelevision()
             val tabList = SearchTabs.resolve(requireContext().prefs().getString(C.UI_SEARCH_TABS, null))
             showCategories = requireContext().prefs().getBoolean(C.UI_SEARCH_SHOW_CATEGORIES, false)
             val configuredTabs = tabList.mapNotNull {
@@ -237,7 +247,7 @@ class SearchPagerFragment : BaseNetworkFragment(), FragmentHost {
             }
             streamTabPosition = tabs.indexOf("1")
             val allAvailable = SearchTabs.ALL in tabs
-            categoriesHidden = allAvailable && !showCategories
+            categoriesHidden = allAvailable && !showCategories && !isTv
             if (tabs.size <= 1 || categoriesHidden) {
                 tabLayout.visibility = View.GONE
             } else {
@@ -285,7 +295,7 @@ class SearchPagerFragment : BaseNetworkFragment(), FragmentHost {
             }
             viewPager.configureForSmoothPaging()
             // Categories are reached from "See all" in All, so swiping between them is off unless shown.
-            viewPager.isUserInputEnabled = !categoriesHidden
+            viewPager.isUserInputEnabled = !categoriesHidden && !isTv
             backToAll = object : OnBackPressedCallback(false) {
                 override fun handleOnBackPressed() {
                     openTab(SearchTabs.ALL)
@@ -329,9 +339,63 @@ class SearchPagerFragment : BaseNetworkFragment(), FragmentHost {
                     else -> false
                 }
             }
-            searchView.requestFocus()
-            WindowCompat.getInsetsController(requireActivity().window, searchView).show(WindowInsetsCompat.Type.ime())
+            if (isTv) {
+                configureTvSearch()
+            } else {
+                searchView.requestFocus()
+                WindowCompat.getInsetsController(requireActivity().window, searchView).show(WindowInsetsCompat.Type.ime())
+            }
         }
+    }
+
+    private fun configureTvSearch() = with(binding) {
+        for (index in 0 until appBar.childCount) {
+            val child = appBar.getChildAt(index)
+            (child.layoutParams as AppBarLayout.LayoutParams).scrollFlags = 0
+        }
+        val input = searchView.findViewById<SearchView.SearchAutoComplete>(AppCompatR.id.search_src_text)
+        input.imeOptions = EditorInfo.IME_ACTION_SEARCH or EditorInfo.IME_FLAG_NO_FULLSCREEN
+        input.setOnKeyListener { _, keyCode, event ->
+            if (keyCode != KeyEvent.KEYCODE_DPAD_CENTER && keyCode != KeyEvent.KEYCODE_BUTTON_A) {
+                return@setOnKeyListener false
+            }
+            if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) {
+                WindowCompat.getInsetsController(requireActivity().window, input).show(WindowInsetsCompat.Type.ime())
+            }
+            true
+        }
+        input.defaultFocusHighlightEnabled = false
+        input.foreground = ContextCompat.getDrawable(requireContext(), R.drawable.tv_navigation_focus)
+        val tabStrip = tabLayout.getChildAt(0) as ViewGroup
+        tabStrip.children.forEach { tab ->
+            TvFocusHelper.install(tab, focusedScale = 1f, focusedTranslationZDp = 0f)
+            tab.setOnKeyListener { _, keyCode, event ->
+                event.action == KeyEvent.ACTION_DOWN && when (keyCode) {
+                    KeyEvent.KEYCODE_DPAD_UP -> input.requestFocus()
+                    KeyEvent.KEYCODE_DPAD_DOWN -> focusTvSearchContent()
+                    else -> false
+                }
+            }
+        }
+        TvFocusHelper.install(dropsFilterButton, focusedScale = 1f)
+        TvFocusHelper.install(recentSearchesClear, focusedScale = 1f)
+        if (binding.searchView.query.isNullOrBlank()) {
+            input.post {
+                if (_binding != null && input.isShown && binding.root.hasWindowFocus()) input.requestFocus()
+            }
+        }
+    }
+
+    private fun focusTvSearchContent(): Boolean {
+        val content = if (binding.searchLanding.isVisible) binding.searchLanding else currentFragment?.view
+        val results = content?.findViewById<RecyclerView>(R.id.recyclerView)
+        val row = results?.children?.firstOrNull {
+            it.isClickable && it.isFocusable && it.isEnabled && it.getGlobalVisibleRect(Rect())
+        }
+        if (row?.requestFocus() == true) return true
+        return content?.getFocusables(View.FOCUS_DOWN)?.firstOrNull {
+            it.isClickable && it.isEnabled && it.getGlobalVisibleRect(Rect())
+        }?.requestFocus() == true || binding.dropsFilterButton.requestFocus()
     }
 
     override fun initialize() {

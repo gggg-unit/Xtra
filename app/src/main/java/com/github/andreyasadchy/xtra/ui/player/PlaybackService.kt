@@ -93,6 +93,7 @@ import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.AdaptiveLivePlaybackController
 import com.github.andreyasadchy.xtra.util.FixedSpeedLivePlaybackControl
 import com.github.andreyasadchy.xtra.util.LivePlaybackSettings
+import com.github.andreyasadchy.xtra.util.TwitchVideoCodecs
 import com.github.andreyasadchy.xtra.util.shouldRunAdaptiveLiveSampleTicker
 import com.github.andreyasadchy.xtra.util.TwitchApiHelper
 import com.github.andreyasadchy.xtra.util.httpProxyHost
@@ -573,6 +574,9 @@ class PlaybackService : MediaSessionService() {
                 }
 
                 override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                        .setPreferredVideoMimeTypes(*TwitchVideoCodecs.preferredMimeTypes(prefs()))
+                        .build()
                     updateHiddenStreamAudio()
                     if (BuildConfig.DEBUG) {
                         Log.d(

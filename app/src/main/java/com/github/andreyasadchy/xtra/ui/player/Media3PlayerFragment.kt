@@ -109,6 +109,7 @@ import com.github.andreyasadchy.xtra.ui.settings.SETTINGS_SCREEN_LIVE_CAPTIONS
 import com.github.andreyasadchy.xtra.ui.settings.SettingsActivity
 import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.TwitchApiHelper
+import com.github.andreyasadchy.xtra.util.TwitchVideoCodecs
 import com.github.andreyasadchy.xtra.util.getAlertDialogBuilder
 import com.github.andreyasadchy.xtra.util.httpProxyHost
 import com.github.andreyasadchy.xtra.util.httpProxyPort
@@ -3258,6 +3259,14 @@ abstract class Media3PlayerFragment : BaseNetworkFragment(), RadioButtonDialogFr
     private fun firstVideoQuality(): VideoQuality? = viewModel.qualities?.firstOrNull {
         it.name != AUTO_QUALITY && it.name != CHAT_ONLY_QUALITY &&
             it.name?.startsWith("audio", ignoreCase = true) != true
+    }?.let(::preferCodecForQuality)
+
+    private fun preferCodecForQuality(quality: VideoQuality): VideoQuality {
+        val preferred = TwitchVideoCodecs.preferredMimeTypes(requireContext().prefs()).asList()
+        return viewModel.qualities?.asSequence()
+            ?.filter { it.name == quality.name && it.frameRate == quality.frameRate }
+            ?.minByOrNull { TwitchVideoCodecs.rank(preferred, it.codecs) }
+            ?: quality
     }
 
     protected fun findQuality(targetQualityString: String?): VideoQuality? {
@@ -3270,7 +3279,7 @@ abstract class Media3PlayerFragment : BaseNetworkFragment(), RadioButtonDialogFr
                 val resolution = quality?.getOrNull(0)?.takeWhile { it.isDigit() }?.toIntOrNull()
                 val fps = quality?.getOrNull(1)?.takeWhile { it.isDigit() }?.toIntOrNull() ?: 30
                 resolution != null && ((targetResolution == resolution && targetFps >= fps) || targetResolution > resolution || qualityString == last)
-            }
+            }?.let(::preferCodecForQuality)
         }
     }
 

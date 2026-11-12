@@ -18,6 +18,7 @@ import com.github.andreyasadchy.xtra.databinding.ItemSearchSectionHeaderBinding
 import com.github.andreyasadchy.xtra.databinding.ItemSectionStatusBinding
 import com.github.andreyasadchy.xtra.ui.common.bindStatus
 import com.github.andreyasadchy.xtra.model.ui.SearchHistoryItem
+import com.github.andreyasadchy.xtra.ui.tv.TvFocusHelper
 import com.github.andreyasadchy.xtra.ui.view.FullSpanItems
 import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.prefs
@@ -74,6 +75,7 @@ class SearchRowAdapter(
 
         init {
             binding.action.setOnClickListener { actionKey?.let(onAction) }
+            TvFocusHelper.install(binding.action, focusedScale = 1f, focusedTranslationZDp = 0f)
         }
 
         fun bind(row: SearchRow.Header) {
@@ -91,6 +93,8 @@ class SearchRowAdapter(
         init {
             binding.root.setOnClickListener { currentRow()?.let(onOpen) }
             binding.delete.setOnClickListener { currentRow()?.takeIf { it.removable }?.let { onRemove?.invoke(it.item) } }
+            TvFocusHelper.install(binding.root, focusedScale = 1f, focusedTranslationZDp = 0f)
+            TvFocusHelper.install(binding.delete, focusedScale = 1f, focusedTranslationZDp = 0f)
         }
 
         private fun currentRow() = submittedRows.firstOrNull { it.key == row?.key } as? SearchRow.Entry

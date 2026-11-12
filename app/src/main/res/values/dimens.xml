@@ -7,7 +7,10 @@
     <dimen name="emote_picker_edit_control_space">48dp</dimen>
     <dimen name="following_overview_bottom_padding">16dp</dimen>
     <dimen name="following_categories_empty_horizontal_margin">24dp</dimen>
-    <dimen name="tv_navigation_width">176dp</dimen>
+    <dimen name="tv_navigation_width">208dp</dimen>
+    <dimen name="tv_navigation_gutter">12dp</dimen>
+    <dimen name="tv_navigation_icon_size">20dp</dimen>
+    <dimen name="tv_navigation_row_height">44dp</dimen>
     <dimen name="adaptive_navigation_rail_width">96dp</dimen>
     <dimen name="channel_hero_expanded_min_width">720dp</dimen>
     <dimen name="channel_hero_landscape_min_width">520dp</dimen>

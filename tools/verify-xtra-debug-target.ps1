@@ -113,7 +113,8 @@ if (-not (Test-Path -LiteralPath $resolvedApkPath -PathType Leaf)) {
     throw "APK was not found at $resolvedApkPath. Build the requested variant first."
 }
 
-$buildToolsRoot = Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools'
+$sdkRoot = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
+$buildToolsRoot = Join-Path $sdkRoot 'build-tools'
 $aapt = Get-ChildItem -LiteralPath $buildToolsRoot -Filter 'aapt.exe' -File -Recurse |
     Sort-Object FullName -Descending |
     Select-Object -First 1
@@ -173,20 +174,24 @@ if ($installedVersionName -ne $apkVersionName) {
     throw "Installed versionName '$installedVersionName' does not match APK versionName '$apkVersionName'."
 }
 
-$avdResponse = Invoke-AdbText -Arguments @('-s', $Serial, 'emu', 'avd', 'name')
-if ($avdResponse -match '(?im)^\s*KO\s*:') {
-    throw "The emulator rejected the AVD name request: $avdResponse"
+$deviceModel = Invoke-AdbText -Arguments @('-s', $Serial, 'shell', 'getprop', 'ro.product.model')
+$avdName = '<physical device>'
+if ($Serial -match '^emulator-\d+$') {
+    $avdResponse = Invoke-AdbText -Arguments @('-s', $Serial, 'emu', 'avd', 'name')
+    if ($avdResponse -match '(?im)^\s*KO\s*:') {
+        throw "The emulator rejected the AVD name request: $avdResponse"
+    }
+    $avdName = @(
+        $avdResponse -split '\r?\n' |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -and $_ -ne 'OK' } |
+            Select-Object -First 1
+    )
+    if ($avdName.Count -ne 1) {
+        throw "Unable to determine the AVD name for '$Serial'. Response: $avdResponse"
+    }
+    $avdName = $avdName[0]
 }
-$avdName = @(
-    $avdResponse -split '\r?\n' |
-        ForEach-Object { $_.Trim() } |
-        Where-Object { $_ -and $_ -ne 'OK' } |
-        Select-Object -First 1
-)
-if ($avdName.Count -ne 1) {
-    throw "Unable to determine the AVD name for '$Serial'. Response: $avdResponse"
-}
-$avdName = $avdName[0]
 $activityDump = Invoke-AdbOptional -Arguments @('-s', $Serial, 'shell', 'dumpsys', 'activity', 'activities')
 $activity = Get-FirstMatch -Text $activityDump -Pattern '(?m)^\s*topResumedActivity=ActivityRecord\{[^\s]+\s+u\d+\s+([^\s}]+)'
 if ([string]::IsNullOrWhiteSpace($activity)) {
@@ -259,6 +264,7 @@ $playbackBackendLabel = if ([string]::IsNullOrWhiteSpace($playbackBackend)) { '<
     "apk_version_name=$apkVersionName"
     "apk_version_code=$apkVersionCode"
     "serial=$Serial"
+    "device_model=$deviceModel"
     "avd=$avdName"
     "installed_package=$ExpectedPackage"
     "installed_apk=$installedApkPath"

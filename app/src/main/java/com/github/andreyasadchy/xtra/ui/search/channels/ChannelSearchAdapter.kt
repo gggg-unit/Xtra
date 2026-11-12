@@ -19,6 +19,7 @@ import com.github.andreyasadchy.xtra.databinding.FragmentSearchChannelsListItemB
 import com.github.andreyasadchy.xtra.model.ui.User
 import com.github.andreyasadchy.xtra.ui.channel.ChannelPagerFragmentDirections
 import com.github.andreyasadchy.xtra.ui.search.SearchHistoryRecorder
+import com.github.andreyasadchy.xtra.ui.tv.TvFocusHelper
 import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.TwitchApiHelper
 import com.github.andreyasadchy.xtra.util.prefs
@@ -61,6 +62,7 @@ class ChannelSearchAdapter(
                             )
                         )
                     }
+                    TvFocusHelper.install(root)
                     if (item.profileImage != null) {
                         userImage.visibility = View.VISIBLE
                         userImage.contentDescription = item.name?.let {

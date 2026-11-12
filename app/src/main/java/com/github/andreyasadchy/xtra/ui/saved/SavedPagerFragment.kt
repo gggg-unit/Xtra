@@ -34,6 +34,7 @@ import com.github.andreyasadchy.xtra.ui.settings.SettingsActivity
 import com.github.andreyasadchy.xtra.ui.settings.setTabCustomizationLongPress
 import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.configureForSmoothPaging
+import com.github.andreyasadchy.xtra.ui.tv.installTvPagerNavigation
 import com.github.andreyasadchy.xtra.util.TwitchApiHelper
 import com.github.andreyasadchy.xtra.util.getAlertDialogBuilder
 import com.github.andreyasadchy.xtra.util.prefs
@@ -233,6 +234,7 @@ class SavedPagerFragment : Fragment(), Scrollable, FragmentHost, SavedSelectionH
             }.attach()
             tabLayout.setTabCustomizationLongPress(requireContext(), C.UI_SAVED_TABS)
             installPagerSortBar(viewPager, sortBar)
+            tabLayout.installTvPagerNavigation(appBar, viewPager, sortBar.root) { currentFragment?.view }
         }
         playerOverlayTabAvoidance?.close()
         playerOverlayTabAvoidance = requireActivity().findViewById<View>(R.id.playerContainer)?.let { playerContainer ->

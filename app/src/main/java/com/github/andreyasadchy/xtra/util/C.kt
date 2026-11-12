@@ -413,6 +413,7 @@ object C {
     const val TOKEN_INCLUDE_TOKEN_STREAM = "token_include_token_stream"
     const val TOKEN_INCLUDE_TOKEN_VIDEO = "token_include_token_video"
     const val TOKEN_SUPPORTED_CODECS = "token_supported_codecs"
+    const val PLAYER_VIDEO_CODEC = "player_video_codec"
     const val TOKEN_SKIP_VIDEO_ACCESS_TOKEN = "token_skip_video_access_token"
     const val TOKEN_SKIP_CLIP_ACCESS_TOKEN = "token_skip_clip_access_token"
     const val DEFAULT_NAVIGATION_TAB_LIST = "0:0:1,4:0:0,1:1:1,2:0:1,3:0:1,5:0:1,6:0:1"

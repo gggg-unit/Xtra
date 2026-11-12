@@ -24,6 +24,7 @@ import androidx.media3.exoplayer.trackselection.TrackSelection
 import androidx.media3.exoplayer.upstream.BandwidthMeter
 import com.github.andreyasadchy.xtra.BuildConfig
 import com.github.andreyasadchy.xtra.model.VideoQuality
+import com.github.andreyasadchy.xtra.util.TwitchVideoCodecs
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.CopyOnWriteArraySet
@@ -129,6 +130,8 @@ class SmoothHlsTrackSelector(
     ): AndroidPair<ExoTrackSelection.Definition, Int>? {
         val desired = qualityPolicy.snapshot()
         if (!desired.isAuto) {
+            fun codecPriority(format: Format): Int =
+                -TwitchVideoCodecs.rank(params.preferredVideoMimeTypes, format.codecs, format.sampleMimeType)
             var selected: Triple<Int, Int, Int>? = null
             var selectedFormat: Format? = null
             for (renderer in 0 until mappedTrackInfo.rendererCount) {
@@ -147,7 +150,7 @@ class SmoothHlsTrackSelector(
                             format.bitrate > params.maxVideoBitrate) continue
                         val previous = selectedFormat
                         if (previous == null || compareValuesBy(format, previous,
-                                { it.height }, { it.frameRate }, { it.bitrate }) > 0) {
+                                { it.height }, { it.frameRate }, ::codecPriority, { it.bitrate }) > 0) {
                             selected = Triple(renderer, group, track)
                             selectedFormat = format
                         }

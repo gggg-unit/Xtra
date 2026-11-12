@@ -1,5 +1,6 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory android:title="@string/settings_quality" app:iconSpaceReserved="false" />
+    <ListPreference android:defaultValue="auto" android:key="player_video_codec" android:title="@string/settings_video_codec" app:iconSpaceReserved="false" />
     <ListPreference android:defaultValue="saved" android:entries="@array/playerQualityEntries" android:entryValues="@array/playerQualityValues" android:key="player_defaultquality" android:summary="%s" android:title="@string/player_defaultquality" app:iconSpaceReserved="false" />
     <ListPreference android:defaultValue="saved" android:entries="@array/playerQualityEntries" android:entryValues="@array/playerQualityValues" android:key="player_default_cellular_quality" android:summary="%s" android:title="@string/settings_mobile_data_quality" app:iconSpaceReserved="false" />
     <ListPreference android:defaultValue="mobile_data" android:entries="@array/playerMeteredWifiQualityEntries" android:entryValues="@array/playerMeteredWifiQualityValues" android:key="player_default_metered_wifi_quality" android:summary="%s" android:title="@string/settings_metered_wifi_quality" app:iconSpaceReserved="false" />

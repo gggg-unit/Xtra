@@ -32,6 +32,7 @@ import com.github.andreyasadchy.xtra.ui.common.streamIdentity
 import com.github.andreyasadchy.xtra.ui.common.thumbnailIdentity
 import com.github.andreyasadchy.xtra.ui.main.MainActivity
 import com.github.andreyasadchy.xtra.ui.top.TopStreamsFragmentDirections
+import com.github.andreyasadchy.xtra.ui.tv.TvFocusHelper
 import com.github.andreyasadchy.xtra.util.TwitchApiHelper
 
 class SearchStreamSuggestionAdapter(
@@ -101,6 +102,7 @@ class SearchStreamSuggestionAdapter(
             }
             binding.channelIdentity.setOnClickListener { boundStream?.let(::openChannel) }
             binding.category.setOnClickListener { boundStream?.let(::openGame) }
+            TvFocusHelper.install(binding.root, focusedScale = 1f)
             tagViews.setOnTagClickListener { tag ->
                 fragment.findNavController().navigate(
                     TopStreamsFragmentDirections.actionGlobalTopFragment(tags = arrayOf(tag)),

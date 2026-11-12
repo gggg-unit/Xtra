@@ -60,9 +60,7 @@ import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.R as NavigationUiR
 import androidx.navigation.ui.setupWithNavController
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import kotlinx.coroutines.CancellationException
 import com.github.andreyasadchy.xtra.R
 import com.github.andreyasadchy.xtra.BuildConfig
@@ -86,6 +84,8 @@ import com.github.andreyasadchy.xtra.ui.appearance.AppearanceRepository
 import com.github.andreyasadchy.xtra.ui.appearance.makeBackdropAwareChrome
 import com.github.andreyasadchy.xtra.ui.search.SearchPagerFragment
 import com.github.andreyasadchy.xtra.ui.tv.TvRemoteKeyHandler
+import com.github.andreyasadchy.xtra.ui.tv.isFirstTvTab
+import com.github.andreyasadchy.xtra.ui.tv.requestSelectedTvTabFocus
 import com.github.andreyasadchy.xtra.ui.main.MainViewModel.Companion.MainViewModelFactory
 import com.github.andreyasadchy.xtra.ui.player.Media3Fragment
 import com.github.andreyasadchy.xtra.ui.player.Media3PlayerFragment
@@ -98,7 +98,6 @@ import com.github.andreyasadchy.xtra.ui.saved.downloads.DownloadsFragment
 import com.github.andreyasadchy.xtra.ui.settings.openTabCustomization
 import com.github.andreyasadchy.xtra.ui.settings.resolveNavigationTabList
 import com.github.andreyasadchy.xtra.ui.settings.SettingsRestoreCoordinator
-import com.github.andreyasadchy.xtra.ui.tv.applyTvSafePadding
 import com.github.andreyasadchy.xtra.ui.tv.disableTvClippingUpTree
 import com.github.andreyasadchy.xtra.ui.team.TeamFragmentDirections
 import com.github.andreyasadchy.xtra.ui.top.TopStreamsFragmentDirections
@@ -120,8 +119,11 @@ import com.github.andreyasadchy.xtra.util.rawPrefs
 import com.github.andreyasadchy.xtra.util.prefs
 import com.github.andreyasadchy.xtra.util.tokenPrefs
 import com.github.andreyasadchy.xtra.util.isTelevision
+import com.google.android.material.color.MaterialColors
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.tabs.TabLayout
 import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -351,11 +353,13 @@ class MainActivity : AppCompatActivity() {
         if (isTv) {
             binding.root.disableTvClippingUpTree(levels = 2)
             binding.tvNavigationContainer.disableTvClippingUpTree(levels = 1)
-            binding.navHostFragment.applyTvSafePadding()
+            configureTvSidebar()
         }
         binding.tvSearch.setOnClickListener {
             leavePlayerForBrowsing()
-            navController.navigate(R.id.action_global_searchPagerFragment)
+            if (navController.currentDestination?.id != R.id.searchPagerFragment) {
+                navController.navigate(R.id.action_global_searchPagerFragment)
+            }
         }
         binding.bottomSearch.setOnClickListener {
             navController.navigate(R.id.action_global_searchPagerFragment)
@@ -450,6 +454,9 @@ class MainActivity : AppCompatActivity() {
 
         var initialized = savedInstanceState != null
         initNavigation()
+        if (isTv && savedInstanceState == null) {
+            binding.tvNavRail.post { if (!hasActivePlayer()) requestTvRootNavigationFocus() }
+        }
         val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         if (!initialized) {
             val networkCapabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
@@ -1758,6 +1765,36 @@ class MainActivity : AppCompatActivity() {
         navController.navigateUp()
     }
 
+    private fun configureTvSidebar() {
+        val gutter = resources.getDimensionPixelSize(R.dimen.tv_navigation_gutter)
+        val safeTop = resources.getDimensionPixelSize(R.dimen.tv_safe_vertical)
+        val rowHeight = resources.getDimensionPixelSize(R.dimen.tv_navigation_row_height)
+        binding.tvBrand.isVisible = true
+        binding.tvNavigationContainer.apply {
+            setPaddingRelative(gutter * 2, safeTop, gutter, safeTop - gutter)
+            setBackgroundColor(MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurfaceContainer))
+        }
+        binding.tvNavRail.apply {
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            setItemIconGravity(NavigationBarView.ITEM_ICON_GRAVITY_START)
+            setItemGravity(NavigationBarView.ITEM_GRAVITY_START_CENTER)
+            setItemIconSize(resources.getDimensionPixelSize(R.dimen.tv_navigation_icon_size))
+            setCollapsedItemMinimumHeight(rowHeight)
+            setCollapsedItemSpacing(0)
+            setItemPaddingTop(gutter / 2)
+            setItemPaddingBottom(gutter / 2)
+            setItemActiveIndicatorExpandedWidth(NavigationBarView.ACTIVE_INDICATOR_WIDTH_MATCH_PARENT)
+            setItemActiveIndicatorExpandedMarginHorizontal(0)
+            setItemActiveIndicatorExpandedPadding(gutter, 0, gutter, 0)
+            setItemActiveIndicatorExpandedHeight(rowHeight - gutter / 2)
+            setIconLabelHorizontalSpacing(gutter)
+            setHorizontalItemTextAppearanceActive(R.style.TextAppearance_Xtra_TvNavigation)
+            setHorizontalItemTextAppearanceInactive(R.style.TextAppearance_Xtra_TvNavigation)
+        }
+        val safeEnd = resources.getDimensionPixelSize(R.dimen.tv_safe_horizontal)
+        binding.navHostFragment.setPaddingRelative(gutter, safeTop, safeEnd, safeTop)
+    }
+
     private fun openTvAccount() {
         val tokenPreferences = tokenPrefs()
         val loggedIn = !tokenPreferences.getString(C.USER_ID, null).isNullOrBlank() ||
@@ -1801,21 +1838,21 @@ class MainActivity : AppCompatActivity() {
             val player = activePlayerFragment()
             if (player is TvRemoteKeyHandler && player.handleTvKeyEvent(event)) return true
             val focused = binding.tvNavigationContainer.findFocus() ?: currentFocus
-            if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT &&
+            val rtl = binding.root.layoutDirection == View.LAYOUT_DIRECTION_RTL
+            val towardContent = if (rtl) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
+            val towardSidebar = if (rtl) KeyEvent.KEYCODE_DPAD_RIGHT else KeyEvent.KEYCODE_DPAD_LEFT
+            if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == towardContent &&
                 focused != null && isDescendantOf(focused, binding.tvNavigationContainer)) {
-                focused.focusSearch(View.FOCUS_RIGHT)?.takeIf {
-                    !isDescendantOf(it, binding.tvNavigationContainer) &&
-                        isTvContentFocusCandidate(it)
-                }?.let { it.requestFocus(); return true }
                 if (requestFirstTvContentFocus()) return true
                 focused.requestFocus()
                 return true
             }
-            if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT &&
+            if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == towardSidebar &&
                 focused != null && isDescendantOf(focused, binding.navHostFragment) &&
-                focused.focusSearch(View.FOCUS_LEFT)
-                    ?.takeIf { isTvContentFocusCandidate(it) } == null &&
-                requestTvRootNavigationFocus()) {
+                (currentTvTabLayout()?.isFirstTvTab(focused) == true ||
+                    focused.focusSearch(if (rtl) View.FOCUS_RIGHT else View.FOCUS_LEFT)
+                        ?.takeIf { isTvContentFocusCandidate(it) } == null) &&
+                requestTvRootNavigationFocus(preferSearch = true)) {
                 return true
             }
             if (event.action == KeyEvent.ACTION_DOWN && event.keyCode in setOf(
@@ -1825,9 +1862,7 @@ class MainActivity : AppCompatActivity() {
                     KeyEvent.KEYCODE_DPAD_DOWN,
                 ) && !hasActivePlayer()) {
                 binding.root.postDelayed({
-                    if (!hasActivePlayer() && currentFocus == null && rootNavigationView().menu.size() > 0) {
-                        rootNavigationView().findViewById<View>(rootNavigationView().selectedItemId)?.requestFocus()
-                    }
+                    if (currentFocus == null) restoreTvRootFocusIfNeeded()
                 }, 50L)
             }
         }
@@ -1853,13 +1888,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun hasActivePlayer(): Boolean = activePlayerFragment() != null
 
-    private fun requestTvRootNavigationFocus(): Boolean {
+    private fun requestTvRootNavigationFocus(preferSearch: Boolean = false): Boolean {
+        if (preferSearch && navController.currentDestination?.id == R.id.searchPagerFragment) {
+            return binding.tvSearch.requestFocus()
+        }
         val navigationView = rootNavigationView()
         val itemId = navigationView.selectedItemId
             .takeIf { it != View.NO_ID && navigationView.menu.findItem(it) != null }
             ?: navigationView.menu.takeIf { it.size() > 0 }?.getItem(0)?.itemId
-            ?: return false
-        return navigationView.findViewById<View>(itemId)?.requestFocus() == true
+        return itemId?.let { navigationView.findViewById<View>(it)?.requestFocus() } == true ||
+            binding.tvSearch.requestFocus()
     }
 
     private fun isDescendantOf(view: View?, ancestor: ViewGroup): Boolean {
@@ -1872,14 +1910,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestFirstTvContentFocus(): Boolean {
+        if (navController.currentDestination?.id != R.id.searchPagerFragment &&
+            currentTvTabLayout()?.requestSelectedTvTabFocus() == true) return true
         val candidates = buildList {
             collectTvFocusableViews(binding.navHostFragment, this)
-        }
-        val navRight = binding.tvNavigationContainer.right
-        val candidate = candidates
-            .filter { view ->
-                isTvContentFocusCandidate(view, navRight)
-            }
+        }.filter(::isTvContentFocusCandidate)
+        val searchField = candidates.firstOrNull { it.id == androidx.appcompat.R.id.search_src_text }
+        val preferred = candidates.filterIsInstance<MaterialCardView>().ifEmpty { candidates }
+        val candidate = searchField ?: preferred
             .minWithOrNull(compareBy<View> { view ->
                 val bounds = Rect()
                 view.getGlobalVisibleRect(bounds)
@@ -1901,12 +1939,24 @@ class MainActivity : AppCompatActivity() {
         } ?: false
     }
 
-    private fun isTvContentFocusCandidate(view: View, minimumLeft: Int = binding.tvNavigationContainer.right): Boolean {
-        val bounds = Rect()
-        return view.getGlobalVisibleRect(bounds) &&
-            bounds.left >= minimumLeft &&
-            bounds.top > resources.getDimensionPixelSize(R.dimen.tv_safe_vertical) * 3
+    private fun currentTvTabLayout(): TabLayout? =
+        supportFragmentManager.findFragmentById(R.id.navHostFragment)
+            ?.childFragmentManager?.primaryNavigationFragment?.view
+            ?.findViewById(R.id.tabLayout)
+
+    private fun focusTvTabsAfterSectionSelection(destinationId: Int) {
+        if (!isTv || binding.tvNavigationContainer.findFocus()?.id != destinationId) return
+        binding.navHostFragment.post {
+            if (!hasActivePlayer() && navController.currentDestination?.id == destinationId &&
+                binding.tvNavigationContainer.findFocus()?.id == destinationId) {
+                currentTvTabLayout()?.requestSelectedTvTabFocus()
+            }
+        }
     }
+
+    private fun isTvContentFocusCandidate(view: View): Boolean =
+        view.isShown && view.isFocusable && view.isEnabled && isDescendantOf(view, binding.navHostFragment) &&
+            view.getGlobalVisibleRect(Rect())
 
     private fun collectTvFocusableViews(view: View, result: MutableList<View>) {
         if (view.isShown && view.isFocusable && view.isClickable) result += view
@@ -1989,11 +2039,9 @@ class MainActivity : AppCompatActivity() {
                         true
                     }
                 }
-                if (isTv && navigationView === rootNavigationView() && menu.size() > 0) {
+                if (isTv && navigationView === rootNavigationView()) {
                     configureTvRootFocusOrder()
-                    findViewById<View>(menu.getItem(0).itemId)?.post {
-                        findViewById<View>(menu.getItem(0).itemId)?.requestFocus()
-                    }
+                    restoreTvRootFocusIfNeeded()
                 }
             }
             setOnItemSelectedListener {
@@ -2006,6 +2054,7 @@ class MainActivity : AppCompatActivity() {
                 if (suppressBottomNavigationSelection) return@setOnItemReselectedListener
                 if (bottomNavigationTransactionInFlight) return@setOnItemReselectedListener
                 reselectNavigationDestination(it.itemId)
+                focusTvTabsAfterSectionSelection(it.itemId)
             }
             }
         }
@@ -2037,8 +2086,11 @@ class MainActivity : AppCompatActivity() {
         val actions = listOf(binding.tvSearch, binding.tvAccount, binding.tvSettings)
         val ordered = railItems + actions
         ordered.forEachIndexed { index, view ->
-            ordered.getOrNull(index - 1)?.id?.takeIf { it != View.NO_ID }?.let { view.nextFocusUpId = it }
-            ordered.getOrNull(index + 1)?.id?.takeIf { it != View.NO_ID }?.let { view.nextFocusDownId = it }
+            view.isFocusable = true
+            view.defaultFocusHighlightEnabled = false
+            view.foreground = ContextCompat.getDrawable(this, R.drawable.tv_navigation_focus)
+            view.nextFocusUpId = (ordered.getOrNull(index - 1) ?: view).id
+            view.nextFocusDownId = (ordered.getOrNull(index + 1) ?: view).id
         }
     }
 
@@ -2101,6 +2153,7 @@ class MainActivity : AppCompatActivity() {
 
         selectCommittedBottomNavigationItem(committedDestinationId)
         bindVisibleToolbarMenu()
+        focusTvTabsAfterSectionSelection(committedDestinationId)
         UiInteractionGovernor.setInteracting(bottomNavigationInteractionSource, false)
         bottomNavigationTransactionInFlight = false
         bottomNavigationDestinationInFlight = null
@@ -2212,18 +2265,6 @@ class MainActivity : AppCompatActivity() {
             prefs.edit {
                 if (prefs.getString(C.PLAYER_PROXY, "1")?.toIntOrNull() == 0) {
                     putBoolean(C.PLAYER_STREAM_PROXY, true)
-                }
-            }
-        }
-        if (version < 6) {
-            prefs.edit {
-                when {
-                    MediaCodecSelector.DEFAULT.getDecoderInfos(MimeTypes.VIDEO_H265, false, false).none { it.hardwareAccelerated } -> {
-                        putString(C.TOKEN_SUPPORTED_CODECS, "h264")
-                    }
-                    MediaCodecSelector.DEFAULT.getDecoderInfos(MimeTypes.VIDEO_AV1, false, false).none { it.hardwareAccelerated } -> {
-                        putString(C.TOKEN_SUPPORTED_CODECS, "h265,h264")
-                    }
                 }
             }
         }

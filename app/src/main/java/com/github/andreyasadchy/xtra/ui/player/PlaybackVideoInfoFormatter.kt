@@ -57,7 +57,9 @@ internal fun formatDurationMs(durationMs: Long?): String {
 internal fun videoInfoRows(
     info: PlaybackVideoInfo,
     viewMetrics: PlaybackVideoViewMetrics,
+    activeCodecLabel: String = "Active video codec",
 ): List<VideoInfoRow> = buildList {
+    add(activeCodecLabel to videoCodecDisplayName(info.videoMimeType, info.videoCodec).orUnknown())
     add("Download resolution" to formatVideoResolution(info.selectedVideoWidth, info.selectedVideoHeight))
     add("Render resolution" to formatVideoResolution(info.renderedVideoWidth, info.renderedVideoHeight))
     add("Viewport resolution" to formatVideoResolution(viewMetrics.viewportWidth, viewMetrics.viewportHeight))
@@ -101,6 +103,24 @@ internal fun videoInfoRows(
     add("Twitch prefetch" to twitchPrefetchState(info))
     add("Manifest requests" to info.manifestLoadCount.toString())
     add("Media chunk requests" to info.mediaLoadCount.toString())
+}
+
+internal fun videoCodecDisplayName(mimeType: String?, codecs: String?): String? {
+    return when (mimeType?.lowercase(Locale.ROOT)) {
+        "video/avc" -> "H.264 / AVC"
+        "video/hevc" -> "H.265 / HEVC"
+        "video/av01" -> "AV1"
+        "video/x-vnd.on2.vp9" -> "VP9"
+        else -> codecs?.split(',')?.firstNotNullOfOrNull { codec ->
+            when (codec.trim().substringBefore('.').lowercase(Locale.ROOT)) {
+                "avc1", "avc3" -> "H.264 / AVC"
+                "hvc1", "hev1" -> "H.265 / HEVC"
+                "av01" -> "AV1"
+                "vp09" -> "VP9"
+                else -> null
+            }
+        } ?: mimeType?.takeIf { it.startsWith("video/") }
+    }
 }
 
 internal fun formatAppProxyRoute(route: String?, proxyServer: String?, requestType: String?): String {

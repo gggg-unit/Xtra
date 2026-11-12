@@ -91,7 +91,7 @@ class VideoInfoDialogFragment : DialogFragment() {
     }
 
     private fun render(info: PlaybackVideoInfo, viewMetrics: PlaybackVideoViewMetrics) {
-        val data = videoInfoRows(info, viewMetrics)
+        val data = videoInfoRows(info, viewMetrics, getString(R.string.playing_video_codec))
         ensureRows(data)
         data.forEachIndexed { index, row ->
             val value = rows[index].value

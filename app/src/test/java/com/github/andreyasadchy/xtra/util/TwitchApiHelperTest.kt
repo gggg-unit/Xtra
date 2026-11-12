@@ -100,7 +100,6 @@ class TwitchApiHelperTest {
         assertNull(developerStringValue(C.PLAYER_STREAM_HEADERS, "secret", null, false))
         assertEquals(C.DEFAULT_TOKEN_X_DEVICE_ID, developerStringValue(C.TOKEN_X_DEVICE_ID, "custom", null, false))
         assertEquals(C.DEFAULT_TOKEN_PLAYER_TYPE, developerStringValue(C.TOKEN_PLAYER_TYPE, "custom", null, false))
-        assertEquals(C.DEFAULT_TOKEN_SUPPORTED_CODECS, developerStringValue(C.TOKEN_SUPPORTED_CODECS, "custom", null, false))
         assertEquals(false, developerBooleanValue(C.DEBUG_EVENT_SUB_CHAT, true, enabled = false))
         assertEquals(false, developerBooleanValue(C.PROXY_MULTIVARIANT_PLAYLIST, true, enabled = false))
         assertEquals(true, developerBooleanValue(C.TOKEN_RANDOM_DEVICE_ID, false, enabled = false))

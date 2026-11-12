@@ -36,6 +36,7 @@ import com.github.andreyasadchy.xtra.util.AdaptiveLiveLoadControl
 import com.github.andreyasadchy.xtra.util.AdaptiveLivePlaybackController
 import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.LivePlaybackPolicies
+import com.github.andreyasadchy.xtra.util.TwitchVideoCodecs
 import com.github.andreyasadchy.xtra.util.m3u8.VaftSegmentEvidenceRecorder
 import com.github.andreyasadchy.xtra.util.prefs
 import com.github.andreyasadchy.xtra.util.tokenPrefs
@@ -152,6 +153,7 @@ class StreamMedia3Runtime(
         C.TOKEN_X_DEVICE_ID,
         C.TOKEN_PLAYER_TYPE,
         C.TOKEN_SUPPORTED_CODECS,
+        C.PLAYER_VIDEO_CODEC,
         C.GQL_TOKEN_WEB,
         C.TWITCH_WEB_COOKIE_HEADER,
         C.GQL_CLIENT_ID_WEB,
@@ -803,7 +805,11 @@ class StreamMedia3Runtime(
         val builder = DefaultPreloadManager.Builder(context, statusControl)
             .setMediaSourceFactory(hlsFactory)
             .setTrackSelectorFactory { selectorContext ->
-                SmoothHlsTrackSelector(selectorContext, qualitySelectionPolicy, ::hiddenAudioDiscardIndex)
+                SmoothHlsTrackSelector(selectorContext, qualitySelectionPolicy, ::hiddenAudioDiscardIndex).apply {
+                    setParameters(buildUponParameters()
+                        .setPreferredVideoMimeTypes(*TwitchVideoCodecs.preferredMimeTypes(playbackPreferences))
+                        .build())
+                }
             }
             .setLoadControl(playbackLoadControl)
             .setRenderersFactory(

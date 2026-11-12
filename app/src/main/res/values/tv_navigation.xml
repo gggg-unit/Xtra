@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tv_app_name" translatable="false">Xtra TV</string>
+
+    <style name="Widget.Xtra.TvNavigationAction" parent="Widget.Material3.Button.TextButton">
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:minHeight">@dimen/tv_navigation_row_height</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">12dp</item>
+        <item name="iconGravity">start</item>
+    </style>
+
+    <style name="TextAppearance.Xtra.TvNavigation" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">16sp</item>
+    </style>
+</resources>

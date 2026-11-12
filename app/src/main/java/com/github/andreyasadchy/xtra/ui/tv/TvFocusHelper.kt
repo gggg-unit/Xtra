@@ -1,7 +1,7 @@
 package com.github.andreyasadchy.xtra.ui.tv
 
+import android.content.res.ColorStateList
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.view.View
 import android.view.ViewGroup
 import android.view.KeyEvent
@@ -141,10 +141,8 @@ object TvFocusHelper {
         view.isFocusable = true
         view.isFocusableInTouchMode = false
         if (view is MaterialCardView) {
-            // MaterialCardView already has a real surface. Its selectable foreground is a
-            // dim grey ripple on Google TV, which obscures the content instead of showing
-            // focus, so use the stroke below as the only TV focus treatment.
-            view.foreground = ColorDrawable(Color.TRANSPARENT)
+            // The material foreground also draws the stroke, so only clear the ripple.
+            view.rippleColor = ColorStateList.valueOf(Color.TRANSPARENT)
         } else if (view is ImageButton || view.foreground != null) {
             // The phone layout uses transparent ImageButton backgrounds. Put the TV focus
             // outline in that existing slot so it remains visible on controls near the
@@ -169,6 +167,7 @@ object TvFocusHelper {
         val originalScaleY = view.scaleY
         val originalTranslationZ = view.translationZ
         val card = view as? MaterialCardView
+        val scale = if (card == null) focusedScale else focusedScale.coerceAtMost(1.025f)
         val originalStrokeWidth = card?.strokeWidth ?: 0
         val originalStrokeColor = card?.strokeColor ?: 0
         val focusColor = MaterialColors.getColor(view, androidx.appcompat.R.attr.colorPrimary)
@@ -177,8 +176,8 @@ object TvFocusHelper {
             previous?.onFocusChange(target, focused)
             target.animate().cancel()
             target.animate()
-                .scaleX(if (focused) focusedScale else originalScaleX)
-                .scaleY(if (focused) focusedScale else originalScaleY)
+                .scaleX(if (focused) scale else originalScaleX)
+                .scaleY(if (focused) scale else originalScaleY)
                 .translationZ(
                     if (focused && card == null) {
                         originalTranslationZ + focusedTranslationZDp * density

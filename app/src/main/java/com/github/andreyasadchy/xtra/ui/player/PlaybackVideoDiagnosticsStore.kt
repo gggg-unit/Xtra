@@ -19,6 +19,7 @@ class PlaybackVideoDiagnosticsStore {
         val mediaId: String,
         val uri: String,
         val quality: VideoQuality,
+        val mimeType: String?,
     )
 
     private val state = AtomicReference(
@@ -62,7 +63,7 @@ class PlaybackVideoDiagnosticsStore {
             frameRate = frameRate,
         )
         if (mediaId != null && uri != null) {
-            lastConfirmedVideoQuality.set(ConfirmedVideoQuality(mediaId, uri, confirmedQuality))
+            lastConfirmedVideoQuality.set(ConfirmedVideoQuality(mediaId, uri, confirmedQuality, format.sampleMimeType))
         }
         update { current ->
             current.copy(
@@ -77,10 +78,21 @@ class PlaybackVideoDiagnosticsStore {
     }
 
     fun snapshot(player: Player): PlaybackVideoInfo {
-        val current = state.get()
+        val videoItem = player.currentMediaItem.takeUnless {
+            C.TRACK_TYPE_VIDEO in player.trackSelectionParameters.disabledTrackTypes
+        }
+        val current = snapshotForMedia(videoItem?.mediaId, videoItem?.localConfiguration?.uri?.toString())
         return current.copy(
             bufferMs = player.totalBufferedDuration.takeIf { it >= 0L },
             liveOffsetMs = player.currentLiveOffset.takeIf { it != C.TIME_UNSET },
+        )
+    }
+
+    internal fun snapshotForMedia(mediaId: String?, uri: String?): PlaybackVideoInfo {
+        val confirmed = lastConfirmedVideoQuality.get()?.takeIf { it.mediaId == mediaId && it.uri == uri }
+        return state.get().copy(
+            videoCodec = confirmed?.quality?.codecs,
+            videoMimeType = confirmed?.mimeType,
         )
     }
 

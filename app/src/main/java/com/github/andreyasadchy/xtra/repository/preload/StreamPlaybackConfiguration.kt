@@ -171,6 +171,7 @@ class StreamPlaybackConfigurationStore private constructor(
             C.TOKEN_X_DEVICE_ID,
             C.TOKEN_PLAYER_TYPE,
             C.TOKEN_SUPPORTED_CODECS,
+            C.PLAYER_VIDEO_CODEC,
             C.GQL_TOKEN_WEB,
             C.TWITCH_WEB_COOKIE_HEADER,
             C.GQL_CLIENT_ID_WEB,

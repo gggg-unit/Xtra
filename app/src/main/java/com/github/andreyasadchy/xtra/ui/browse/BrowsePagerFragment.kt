@@ -30,6 +30,7 @@ import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.TwitchApiHelper
 import com.github.andreyasadchy.xtra.util.getAlertDialogBuilder
 import com.github.andreyasadchy.xtra.util.configureForSmoothPaging
+import com.github.andreyasadchy.xtra.ui.tv.installTvPagerNavigation
 import com.github.andreyasadchy.xtra.util.tokenPrefs
 import com.google.android.material.tabs.TabLayoutMediator
 
@@ -147,6 +148,7 @@ class BrowsePagerFragment : Fragment(), Scrollable, FragmentHost {
                 tab.text = getString(if (position == 0) R.string.following_categories else R.string.channels)
             }.also { it.attach() }
             viewPager.doOnLayout { configureCurrentPage(pageBinding) }
+            tabLayout.installTvPagerNavigation(appBar, viewPager, sortBar.root) { currentFragment?.view }
         }
         playerOverlayTabAvoidance?.close()
         playerOverlayTabAvoidance = requireActivity().findViewById<View>(R.id.playerContainer)?.let { playerContainer ->

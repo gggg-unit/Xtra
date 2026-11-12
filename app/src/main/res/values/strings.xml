@@ -1241,7 +1241,8 @@ Tap to search everywhere</string>
     <string name="volume">Volume</string>
     <string name="aspect_ratio">Aspect ratio</string>
     <string name="player_menu">Player menu</string>
-    <string name="video_info" translatable="false">Video info</string>
+    <string name="video_info">Video info</string>
+    <string name="playing_video_codec">Active video codec</string>
     <string name="restart_player">Restart player</string>
     <string name="sub_only_summary">For sub-only content</string>
     <string name="follow_button">Follow button</string>
@@ -2135,6 +2136,9 @@ Tap to search everywhere</string>
     <string name="stream_player_type">Stream player type</string>
     <string name="video_player_type">Video player type</string>
     <string name="supported_codecs">Supported codecs</string>
+    <string name="settings_video_codec">Video codec</string>
+    <string name="settings_video_codec_auto_summary">Automatic · Prefers %1$s when available</string>
+    <string name="settings_video_codec_software">%1$s (software decoding)</string>
     <string name="hide_during_ads">Hide player during source transitions</string>
     <string name="include_gql_token_stream">Include GQL token in stream requests</string>
     <string name="include_gql_token_video">Include GQL token in video requests</string>

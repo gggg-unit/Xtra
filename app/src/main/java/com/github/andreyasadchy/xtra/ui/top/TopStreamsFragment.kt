@@ -45,14 +45,17 @@ import com.github.andreyasadchy.xtra.ui.main.MainActivity
 import com.github.andreyasadchy.xtra.ui.search.SearchPagerFragmentDirections
 import com.github.andreyasadchy.xtra.ui.settings.SettingsActivity
 import com.github.andreyasadchy.xtra.ui.top.TopStreamsViewModel.Companion.TopStreamsViewModelFactory
+import com.github.andreyasadchy.xtra.ui.tv.TvFocusHelper
 import com.github.andreyasadchy.xtra.util.C
 import com.github.andreyasadchy.xtra.util.TwitchApiHelper
 import com.github.andreyasadchy.xtra.util.getAlertDialogBuilder
+import com.github.andreyasadchy.xtra.util.isTelevision
 import com.github.andreyasadchy.xtra.util.prefs
 import com.github.andreyasadchy.xtra.util.tokenPrefs
 import com.github.andreyasadchy.xtra.repository.streamfeed.RefreshReason
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.google.android.material.appbar.AppBarLayout
 
 class TopStreamsFragment : PagedListFragment(), Scrollable, PagerScrollStateAware, StreamsSortDialog.OnFilter {
 
@@ -223,6 +226,10 @@ class TopStreamsFragment : PagedListFragment(), Scrollable, PagerScrollStateAwar
                     tags = viewModel.tags,
                     languages = viewModel.languages
                 ).show(childFragmentManager, null)
+            }
+            if (requireContext().isTelevision()) {
+                (toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags = 0
+                TvFocusHelper.install(sortBar.root, focusedScale = 1f, focusedTranslationZDp = 0f)
             }
             viewLifecycleOwner.lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.STARTED) {

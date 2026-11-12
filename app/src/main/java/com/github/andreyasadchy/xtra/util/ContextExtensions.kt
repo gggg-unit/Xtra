@@ -146,6 +146,9 @@ private class DeveloperGatedPreferences(
     override fun getAll(): MutableMap<String, *> = delegate.all
 
     override fun getString(key: String?, defValue: String?): String? {
+        if (key == C.TOKEN_SUPPORTED_CODECS) {
+            return TwitchVideoCodecs.requestedTokens(delegate.getString(C.PLAYER_VIDEO_CODEC, null))
+        }
         return developerStringValue(
             key = key,
             storedValue = delegate.getString(key, null),
@@ -210,7 +213,6 @@ internal fun developerStringValue(
         C.TOKEN_X_DEVICE_ID -> C.DEFAULT_TOKEN_X_DEVICE_ID
         C.TOKEN_PLAYER_TYPE -> C.DEFAULT_TOKEN_PLAYER_TYPE
         C.TOKEN_PLAYER_TYPE_VIDEO -> C.DEFAULT_TOKEN_PLAYER_TYPE_VIDEO
-        C.TOKEN_SUPPORTED_CODECS -> C.DEFAULT_TOKEN_SUPPORTED_CODECS
         else -> storedValue ?: defaultValue
     }
 }

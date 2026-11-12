@@ -51,6 +51,7 @@ object SettingsMigration {
         C.PLAYER_HUD_LAYOUT_V2,
         C.PLAYER_LOW_LATENCY,
         C.PLAYER_LIVE_MODE,
+        C.PLAYER_VIDEO_CODEC,
         C.PLAYER_BUFFER_MIN,
         C.PLAYER_BUFFER_MAX,
         C.PLAYER_BUFFER_PLAYBACK,

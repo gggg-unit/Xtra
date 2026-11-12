@@ -1,5 +1,6 @@
 package com.github.andreyasadchy.xtra.ui.common
 
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -281,6 +282,19 @@ class StreamsAdapter(
             binding.root.setOnClickListener { boundStream?.let(::openStream) }
             TvFocusHelper.install(binding.root)
             if (binding.root.context.isTelevision()) {
+                binding.titleScroll.isFillViewport = true
+                binding.titleScroll.isHorizontalFadingEdgeEnabled = false
+                binding.titleScroll.isFocusable = false
+                binding.title.apply {
+                    isSingleLine = false
+                    maxLines = 2
+                    ellipsize = TextUtils.TruncateAt.END
+                }
+                binding.titleScroll.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+                    if (right - left != oldRight - oldLeft) {
+                        binding.title.maxWidth = right - left
+                    }
+                }
                 binding.root.setOnLongClickListener {
                     boundStream?.let(::openChannel)
                     boundStream != null

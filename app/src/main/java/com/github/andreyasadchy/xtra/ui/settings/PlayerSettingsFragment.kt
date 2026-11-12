@@ -26,6 +26,7 @@ import androidx.preference.SwitchPreferenceCompat
 import com.github.andreyasadchy.xtra.R
 import com.github.andreyasadchy.xtra.ui.settings.SettingsViewModel.Companion.SettingsViewModelFactory
 import com.github.andreyasadchy.xtra.util.C
+import com.github.andreyasadchy.xtra.util.TwitchVideoCodecs
 import com.github.andreyasadchy.xtra.XtraApp
 import com.github.andreyasadchy.xtra.util.getAlertDialogBuilder
 import com.github.andreyasadchy.xtra.ui.player.captions.formatCaptionTextOffset
@@ -58,6 +59,7 @@ class PlayerSettingsFragment : MaterialPreferenceFragment() {
             return
         }
         setPreferencesFromResource(R.xml.playback_preferences, rootKey)
+        configureVideoCodecPreference()
         configureLivePlaybackPreferences()
         findPreference<Preference>("live_caption_page")?.setOnPreferenceClickListener {
             findNavController().navigate(R.id.liveCaptionsFragment)
@@ -93,6 +95,20 @@ class PlayerSettingsFragment : MaterialPreferenceFragment() {
                 .setNegativeButton(getString(R.string.no), null)
                 .show()
             true
+        }
+    }
+
+    private fun configureVideoCodecPreference() {
+        val preference = findPreference<ListPreference>(C.PLAYER_VIDEO_CODEC) ?: return
+        val decoders = TwitchVideoCodecs.available
+        preference.entryValues = (listOf("auto") + decoders.map { it.codec.token }).toTypedArray()
+        preference.entries = (listOf(getString(R.string.network_library_automatic)) + decoders.map {
+            if (it.hardware) it.codec.label else getString(R.string.settings_video_codec_software, it.codec.label)
+        }).toTypedArray()
+        if (preference.value !in preference.entryValues) preference.value = "auto"
+        preference.summaryProvider = Preference.SummaryProvider<ListPreference> {
+            if (it.value != "auto") it.entry
+            else getString(R.string.settings_video_codec_auto_summary, TwitchVideoCodecs.ordered(null).first().label)
         }
     }
 
