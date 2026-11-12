@@ -984,9 +984,9 @@ class SettingsFragment : MaterialPreferenceFragment() {
         }
         findPreference<Preference>("about_build")?.summary = BuildConfig.BUILD_TYPE
         findPreference<Preference>("about_package")?.summary = BuildConfig.APPLICATION_ID
-        findPreference<Preference>("about_github")?.setOnPreferenceClickListener { openExternal("https://github.com/thiscallnet/Xtra"); true }
-        findPreference<Preference>("about_licenses")?.setOnPreferenceClickListener { openExternal("https://github.com/thiscallnet/Xtra/blob/master/LICENSE"); true }
-        findPreference<Preference>("about_issue")?.setOnPreferenceClickListener { openExternal("https://github.com/thiscallnet/Xtra/issues"); true }
+        findPreference<Preference>("about_github")?.setOnPreferenceClickListener { openExternal("https://github.com/gggg-unit/Xtra"); true }
+        findPreference<Preference>("about_licenses")?.setOnPreferenceClickListener { openExternal("https://github.com/gggg-unit/Xtra/blob/tv-edition/LICENSE"); true }
+        findPreference<Preference>("about_issue")?.setOnPreferenceClickListener { openExternal("https://github.com/gggg-unit/Xtra/issues"); true }
         findPreference<Preference>("developer_options")?.isVisible = requireContext().prefs().getBoolean(C.SETTINGS_DEVELOPER_UNLOCKED, false) &&
             requireContext().prefs().getBoolean(C.SETTINGS_DEVELOPER_ENABLED, false)
         findPreference<SwitchPreferenceCompat>(C.SETTINGS_DEVELOPER_ENABLED)?.setOnPreferenceChangeListener { _, value ->

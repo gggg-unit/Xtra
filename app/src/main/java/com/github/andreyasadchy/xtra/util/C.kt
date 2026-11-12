@@ -430,7 +430,7 @@ object C {
     const val UPDATE_LAST_ATTEMPTED = "update_last_attempted"
     const val UPDATE_RATE_LIMITED_UNTIL = "update_rate_limited_until"
     const val UPDATE_URL = "update_url"
-    const val DEFAULT_UPDATE_URL = "https://api.github.com/repos/thiscallnet/xtra/releases/latest"
+    const val DEFAULT_UPDATE_URL = "https://api.github.com/repos/gggg-unit/Xtra/releases/latest"
     const val UPDATE_CHECK_ENABLED = "update_check_enabled"
     const val UPDATE_CHECK_FREQUENCY = "update_check_frequency"
     const val UPDATE_USE_BROWSER = "update_use_browser"

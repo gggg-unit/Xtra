@@ -15,7 +15,7 @@ plugins {
 // Shared by mutually data-compatible GitHub releases. Raise this for incompatible
 // database/settings changes; never derive it from the Actions run number.
 val defaultVersionCode = 10000
-val applicationVersionName = "2.58.6"
+val applicationVersionName = "2.58.6.1"
 val applicationBuildNumber = providers.gradleProperty("ciBuildNumber").orNull?.toInt() ?: 0
 val applicationVersionCode = providers.gradleProperty("ciVersionCode")
     .orNull
@@ -80,19 +80,11 @@ kotlin {
 }
 
 android {
-    signingConfigs {
-        getByName("debug") {
-            keyAlias = "debug"
-            keyPassword = "123456"
-            storeFile = file("debug-keystore.jks")
-            storePassword = "123456"
-        }
-    }
     namespace = "com.github.andreyasadchy.xtra"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.github.andreyasadchy.xtra"
+        applicationId = "io.github.ggggunit.xtratv"
         // GeckoView 150's AAR manifest requires API 26.
         minSdk = 26
         targetSdk = 37
@@ -121,7 +113,8 @@ android {
             isShrinkResources = true
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            // Xtra TV releases are signed separately with the distribution key.
+            signingConfig = null
         }
         create("perf") {
             initWith(getByName("release"))
@@ -149,7 +142,7 @@ android {
             // Release distribution uses standalone ABI APKs; keep debug/perf APKs universal.
             isEnable = releaseAbiSplitsRequested
             reset()
-            include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            include("arm64-v8a", "armeabi-v7a")
             isUniversalApk = !releaseAbiSplitsRequested
         }
     }
